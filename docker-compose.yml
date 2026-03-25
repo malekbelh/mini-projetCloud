@@ -1,0 +1,54 @@
+services:
+  flask-app:
+    build: ./flask-app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/tasks
+      - REDIS_URL=redis://redis:6379
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: tasks
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
